@@ -173,11 +173,20 @@ def standards(hourly: float, machines: float, run_hrs: float, in_extra: float = 
 # --------------------------------------------------------------------------
 TILE_CSS = """
 <style>
+.wt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--min,170px),1fr));gap:12px;margin:4px 0 18px}
+.wt-legend{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.wt-chip{border:1px solid #444;border-radius:6px;padding:2px 8px;font-size:.8rem;white-space:nowrap}
+@media (max-width:640px){
+ .wt-grid{grid-template-columns:repeat(auto-fill,minmax(calc(var(--min,170px) * .85),1fr));gap:8px}
+ .wt-act{font-size:1.2rem}.wt-big{font-size:1.5rem}.wt-name{font-size:.7rem}.wt-badge{font-size:.55rem;padding:2px 6px}
+ .wt-foot{font-size:.62rem}
+}
 .wt{background:#fff;border:1px solid #e3e6ee;border-radius:12px;box-shadow:0 1px 3px rgba(20,25,40,.10);
     overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:#1c2333;transition:transform .12s,box-shadow .12s}
 .wt:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(20,25,40,.18)}
 .wt-bar{height:7px}
-.wt-top{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 2px}
+.wt-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px;padding:8px 10px 2px}
+.wt-name,.wt-badge{white-space:nowrap}
 .wt-name{font-weight:800;font-size:.78rem;letter-spacing:.04em;color:#44506b}
 .wt-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
 .wt-body{display:flex;align-items:stretch;padding:6px 10px 4px}
@@ -236,12 +245,10 @@ def days_card(name, days, lvl):
     )
 
 
-def grid(cards, per_row=9):
-    for i in range(0, len(cards), per_row):
-        cols = st.columns(per_row)
-        for c, html in zip(cols, cards[i:i + per_row]):
-            c.markdown(html, unsafe_allow_html=True)
-        st.write("")
+def grid(cards, min_px=170):
+    """Responsive CSS grid: as many tiles per row as fit (wraps to 2-up / 1-up on phones)."""
+    st.markdown(f"<div class='wt-grid' style='--min:{min_px}px'>{''.join(cards)}</div>",
+                unsafe_allow_html=True)
 
 
 def style_level(df, th):
@@ -258,12 +265,11 @@ def style_level(df, th):
 
 
 def legend(th):
-    parts = []
+    chips = []
     bounds = [f"> {th[0]}", f"{th[1]} – {th[0]}", f"{th[2]} – {th[1]}", f"{th[3]} – {th[2]}", f"≤ {th[3]}"]
     for l, b in zip(LEVELS, bounds):
-        parts.append(f"<span style='background:{l[2]};color:{l[3]};border:1px solid #444;border-radius:4px;"
-                     f"padding:2px 8px;margin-right:6px;font-size:.8rem'>{l[0]} ({b} d)</span>")
-    st.markdown("".join(parts), unsafe_allow_html=True)
+        chips.append(f"<span class='wt-chip' style='background:{l[2]};color:{l[3]}'>{l[0]} ({b} d)</span>")
+    st.markdown(f"<div class='wt-legend'>{''.join(chips)}</div>", unsafe_allow_html=True)
 
 
 def to_excel(df: pd.DataFrame) -> bytes:
@@ -326,12 +332,13 @@ if calc.empty:
     st.info("No morning-commitment rows found.")
     st.stop()
 
-k = st.columns(6)
-k[0].metric("Bands", len(calc))
-k[1].metric("Total WIP (pcs)", f"{calc['System Line WIP'].sum():,.0f}")
-k[2].metric("Avg WIP days", f"{calc['WIP Days'].mean():.2f}")
-for col, name in zip(k[3:], ["High WIP", "Reorder Level", "Line Stop"]):
-    col.metric(name, int((calc["Level"] == name).sum()))
+kpis = [("Bands", f"{len(calc)}"), ("Total WIP (pcs)", f"{calc['System Line WIP'].sum():,.0f}"),
+        ("Avg WIP days", f"{calc['WIP Days'].mean():.2f}")] + \
+       [(n, f"{int((calc['Level'] == n).sum())}") for n in ["High WIP", "Reorder Level", "Line Stop"]]
+st.markdown("<div class='wt-grid' style='--min:115px'>" + "".join(
+    f"<div class='wt' style='padding:10px 12px'><div class='wt-lbl'>{n}</div>"
+    f"<div style='font-size:1.5rem;font-weight:800'>{v}</div></div>" for n, v in kpis) + "</div>",
+    unsafe_allow_html=True)
 legend(th)
 
 tab1, tab2, tab3, tab4 = st.tabs(["WIP Dashboard (pcs)", "WIP Days Dashboard",
@@ -345,7 +352,7 @@ with tab1:
         d = calc[calc["Zone"] == z]
         st.subheader(z or "Zone")
         grid([card(r["Band"], r["Dashboard Target (pcs)"], r["System Line WIP"], r["WIP Days"],
-                   level_of(r["WIP Days"], th)) for _, r in d.iterrows()], per_row=6)
+                   level_of(r["WIP Days"], th)) for _, r in d.iterrows()], min_px=170)
     st.caption("Target = Day pcs target × 1.18 (max standard WIP); Actual = system line WIP. "
                "Colour is driven by WIP days.")
     chart = calc.set_index("Band")[["Dashboard Target (pcs)", "System Line WIP"]]
@@ -357,7 +364,8 @@ with tab2:
     for z in zsel2:
         d = calc[calc["Zone"] == z]
         st.subheader(z or "Zone")
-        grid([days_card(r["Band"], r["WIP Days"], level_of(r["WIP Days"], th)) for _, r in d.iterrows()])
+        grid([days_card(r["Band"], r["WIP Days"], level_of(r["WIP Days"], th)) for _, r in d.iterrows()],
+             min_px=120)
 
 # ---- Tab 3 : calculations --------------------------------------------------
 with tab3:
