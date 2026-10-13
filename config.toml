@@ -1,5 +1,8 @@
 [theme]
-base = "light"
+base = "dark"
 
 [server]
 maxUploadSize = 20
+
+[browser]
+gatherUsageStats = false
