@@ -171,34 +171,68 @@ def standards(hourly: float, machines: float, run_hrs: float, in_extra: float = 
 # --------------------------------------------------------------------------
 # UI helpers
 # --------------------------------------------------------------------------
+TILE_CSS = """
+<style>
+.wt{background:#fff;border:1px solid #e3e6ee;border-radius:12px;box-shadow:0 1px 3px rgba(20,25,40,.10);
+    overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:#1c2333;transition:transform .12s,box-shadow .12s}
+.wt:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(20,25,40,.18)}
+.wt-bar{height:7px}
+.wt-top{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 2px}
+.wt-name{font-weight:800;font-size:.78rem;letter-spacing:.04em;color:#44506b}
+.wt-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
+.wt-body{display:flex;align-items:stretch;padding:6px 10px 4px}
+.wt-col{flex:1;text-align:center}
+.wt-div{width:0;border-left:2px dashed #cfd5e3;margin:2px 6px}
+.wt-lbl{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a93a8}
+.wt-tgt{font-size:1rem;font-weight:600;color:#6b7590}
+.wt-act{font-size:1.45rem;font-weight:800;line-height:1.1}
+.wt-track{position:relative;height:8px;background:#e9ecf3;border-radius:6px;margin:6px 10px 4px;overflow:visible}
+.wt-fill{height:100%;border-radius:6px}
+.wt-mark{position:absolute;top:-3px;width:2px;height:14px;background:#1c2333;opacity:.55}
+.wt-foot{display:flex;justify-content:space-between;padding:2px 10px 9px;font-size:.7rem;color:#6b7590}
+.wt-foot b{color:#1c2333}
+.wt-big{font-size:1.9rem;font-weight:800;text-align:center;padding:4px 0 2px;line-height:1.1}
+.wt-sub{text-align:center;font-size:.64rem;color:#8a93a8;padding-bottom:9px;letter-spacing:.06em;text-transform:uppercase}
+</style>
+"""
+
+
+def _badge(lvl):
+    name, _, bg, fg, _ = lvl
+    bd = "border:1px solid #bbb;" if bg.upper() in ("#FFFF00",) else ""
+    return f"<span class='wt-badge' style='background:{bg};color:{fg};{bd}'>{name}</span>"
+
+
 def card(name, target, actual, days, lvl):
-    """Band tile split by a vertical divider: Target (left, neutral) | Actual (right, level colour)."""
-    _, _, bg, fg, _ = lvl
+    """Band tile: level accent bar + badge, Target | Actual split by a dashed divider, progress bar."""
+    bg = lvl[2]
+    pct = (actual / target) if target else 0
+    fill = min(pct, 1.5) / 1.5 * 100            # bar spans 0-150 % of target; marker at 100 %
+    mark = 100 / 1.5
     return (
-        "<div style='border:1px solid #444;border-radius:6px;overflow:hidden;text-align:center;"
-        "line-height:1.25'>"
-        f"<div style='background:#262730;color:#fff;font-weight:700;font-size:.8rem;padding:4px 2px;"
-        f"border-bottom:1px solid #444'>{name}</div>"
-        "<div style='display:flex'>"
-        "<div style='flex:1;padding:6px 4px;background:#f0f2f6;color:#111;border-right:2px solid #444'>"
-        f"<div style='font-size:.68rem;text-transform:uppercase;opacity:.7'>Target</div>"
-        f"<div style='font-size:1rem;font-weight:700'>{target:,.0f}</div></div>"
-        f"<div style='flex:1;padding:6px 4px;background:{bg};color:{fg}'>"
-        f"<div style='font-size:.68rem;text-transform:uppercase;opacity:.85'>Actual</div>"
-        f"<div style='font-size:1rem;font-weight:700'>{actual:,.0f}</div></div>"
+        "<div class='wt'>"
+        f"<div class='wt-bar' style='background:{bg}'></div>"
+        f"<div class='wt-top'><span class='wt-name'>{name.replace('R4-', '')}</span>{_badge(lvl)}</div>"
+        "<div class='wt-body'>"
+        f"<div class='wt-col'><div class='wt-lbl'>Target</div><div class='wt-tgt'>{target:,.0f}</div></div>"
+        "<div class='wt-div'></div>"
+        f"<div class='wt-col'><div class='wt-lbl'>Actual</div><div class='wt-act'>{actual:,.0f}</div></div>"
         "</div>"
-        f"<div style='background:{bg};color:{fg};font-size:.72rem;padding:2px;border-top:1px solid #444'>"
-        f"{days:.2f} days</div></div>"
+        f"<div class='wt-track'><div class='wt-fill' style='width:{fill:.1f}%;background:{bg}'></div>"
+        f"<div class='wt-mark' style='left:{mark:.1f}%'></div></div>"
+        f"<div class='wt-foot'><span><b>{days:.2f}</b> days</span><span><b>{pct:.0%}</b> of target</span></div>"
+        "</div>"
     )
 
 
 def days_card(name, days, lvl):
-    _, _, bg, fg, _ = lvl
+    bg = lvl[2]
     return (
-        f"<div style='background:{bg};color:{fg};border:1px solid #444;border-radius:6px;"
-        f"padding:6px 8px;text-align:center'>"
-        f"<div style='font-weight:700;font-size:.8rem'>{name}</div>"
-        f"<div style='font-size:1.25rem;font-weight:700'>{days:.2f}</div></div>"
+        "<div class='wt'>"
+        f"<div class='wt-bar' style='background:{bg}'></div>"
+        f"<div class='wt-top'><span class='wt-name'>{name.replace('R4-', '')}</span>{_badge(lvl)}</div>"
+        f"<div class='wt-big'>{days:.2f}</div><div class='wt-sub'>WIP days</div>"
+        "</div>"
     )
 
 
@@ -243,6 +277,7 @@ def to_excel(df: pd.DataFrame) -> bytes:
 # Sidebar – data input
 # --------------------------------------------------------------------------
 st.title("Line Wise WIP Dashboard – R4")
+st.markdown(TILE_CSS, unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("Data input")
@@ -310,7 +345,7 @@ with tab1:
         d = calc[calc["Zone"] == z]
         st.subheader(z or "Zone")
         grid([card(r["Band"], r["Dashboard Target (pcs)"], r["System Line WIP"], r["WIP Days"],
-                   level_of(r["WIP Days"], th)) for _, r in d.iterrows()])
+                   level_of(r["WIP Days"], th)) for _, r in d.iterrows()], per_row=6)
     st.caption("Target = Day pcs target × 1.18 (max standard WIP); Actual = system line WIP. "
                "Colour is driven by WIP days.")
     chart = calc.set_index("Band")[["Dashboard Target (pcs)", "System Line WIP"]]
