@@ -173,46 +173,74 @@ def standards(hourly: float, machines: float, run_hrs: float, in_extra: float = 
 # --------------------------------------------------------------------------
 TILE_CSS = """
 <style>
-.wt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--min,170px),1fr));gap:12px;margin:4px 0 18px}
-.wt-legend{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
-.wt-chip{border:1px solid #444;border-radius:6px;padding:2px 8px;font-size:.8rem;white-space:nowrap}
-@media (max-width:640px){
- .wt-grid{grid-template-columns:repeat(auto-fill,minmax(calc(var(--min,170px) * .85),1fr));gap:8px}
- .wt-act{font-size:1.2rem}.wt-big{font-size:1.5rem}.wt-name{font-size:.7rem}.wt-badge{font-size:.55rem;padding:2px 6px}
- .wt-foot{font-size:.62rem}
+/* Theme-aware, projector-friendly dashboard styling */
+:root {
+  --dash-font: clamp(16px, 1.05vw, 21px);
+  --dash-muted: var(--text-color, #263449);
+  --dash-surface: var(--secondary-background-color, #f2f5f9);
+  --dash-page: var(--background-color, #ffffff);
+  --dash-border: rgba(128, 145, 165, .45);
 }
-.wt{border:1px solid rgba(255,255,255,.30);border-radius:12px;box-shadow:0 4px 12px rgba(20,25,40,.16);
-    overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;transition:transform .12s,box-shadow .12s}
-.wt:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(20,25,40,.18)}
-.wt-bar{height:7px}
-.wt-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px;padding:8px 10px 2px}
-.wt-name,.wt-badge{white-space:nowrap}
-.wt-name{font-weight:800;font-size:.78rem;letter-spacing:.04em;color:inherit}
-.wt-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
-.wt-body{display:flex;align-items:stretch;padding:6px 10px 4px}
-.wt-col{flex:1;text-align:center}
-.wt-div{width:0;border-left:2px dashed currentColor;opacity:.45;margin:2px 6px}
-.wt-lbl{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:inherit;opacity:.82}
-.wt-tgt{font-size:1rem;font-weight:700;color:inherit}
-.wt-act{font-size:1.45rem;font-weight:800;line-height:1.1}
-.wt-track{position:relative;height:8px;background:rgba(255,255,255,.30);border-radius:6px;margin:6px 10px 4px;overflow:visible}
-.wt-fill{height:100%;border-radius:6px}
-.wt-mark{position:absolute;top:-3px;width:2px;height:14px;background:currentColor;opacity:.75}
-.wt-foot{display:flex;justify-content:space-between;padding:2px 10px 9px;font-size:.7rem;color:inherit;opacity:.9}
-.wt-foot b{color:inherit}
-.wt-big{font-size:1.9rem;font-weight:800;text-align:center;padding:4px 0 2px;line-height:1.1}
-.wt-sub{text-align:center;font-size:.64rem;color:inherit;opacity:.82;padding-bottom:9px;letter-spacing:.06em;text-transform:uppercase}
-/* Full-color Streamlit dashboard panels and controls */
-.stApp{background:linear-gradient(135deg,#eef4ff 0%,#f7f9fc 55%,#edf7f3 100%)}
-[data-testid="stMetric"]{background:linear-gradient(135deg,#183b66,#286a8e);padding:16px;border-radius:14px;color:#fff;box-shadow:0 4px 12px rgba(20,40,70,.15)}
-[data-testid="stMetric"] label,[data-testid="stMetric"] [data-testid="stMetricValue"],[data-testid="stMetric"] [data-testid="stMetricDelta"]{color:#fff!important}
-[data-testid="stExpander"],[data-testid="stDataFrame"],[data-testid="stTable"]{border-radius:12px;overflow:hidden}
-[data-testid="stTabs"] [role="tab"]{background:#dce8f7;border-radius:8px 8px 0 0;margin-right:4px;font-weight:700}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"]{background:#174a7e;color:#fff}
+.stApp { color: var(--text-color, #1c2333); background: var(--background-color, #ffffff); }
+html, body, [class*="css"], .stMarkdown, .stText, label, p { font-size: var(--dash-font); }
+.block-container { max-width: 1800px; padding-top: 1.4rem; padding-bottom: 2rem; }
+h1 { font-size: clamp(2rem, 2.4vw, 3.2rem) !important; font-weight: 850 !important; }
+h2 { font-size: clamp(1.55rem, 1.8vw, 2.3rem) !important; }
+h3 { font-size: clamp(1.25rem, 1.45vw, 1.8rem) !important; }
+.wt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--min,190px),1fr));gap:16px;margin:8px 0 22px}
+.wt-legend{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 16px}
+.wt-chip{border:2px solid rgba(80,90,105,.45);border-radius:8px;padding:7px 11px;font-size:clamp(14px,.9vw,18px);font-weight:750;white-space:normal}
+.wt{border:2px solid rgba(255,255,255,.48);border-radius:14px;box-shadow:0 5px 15px rgba(20,25,40,.20);overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;transition:transform .12s,box-shadow .12s;min-height:130px}
+.wt:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(20,25,40,.25)}
+.wt-bar{height:8px}
+.wt-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px 5px}
+.wt-name,.wt-badge{white-space:normal}
+.wt-name{font-weight:850;font-size:clamp(14px,.95vw,19px);letter-spacing:.02em;color:inherit}
+.wt-badge{font-size:clamp(12px,.78vw,16px);font-weight:850;padding:5px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.02em;line-height:1.25}
+.wt-body{display:flex;align-items:stretch;padding:10px 14px 7px}
+.wt-col{flex:1;text-align:center;min-width:0}
+.wt-div{width:0;border-left:2px dashed currentColor;opacity:.55;margin:2px 10px}
+.wt-lbl{font-size:clamp(12px,.8vw,16px);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:inherit;opacity:.95}
+.wt-tgt{font-size:clamp(19px,1.35vw,27px);font-weight:800;color:inherit}
+.wt-act{font-size:clamp(24px,1.75vw,36px);font-weight:900;line-height:1.15}
+.wt-track{position:relative;height:12px;background:rgba(255,255,255,.38);border:1px solid rgba(0,0,0,.15);border-radius:8px;margin:8px 14px 6px;overflow:visible}
+.wt-fill{height:100%;border-radius:7px}
+.wt-mark{position:absolute;top:-4px;width:3px;height:18px;background:currentColor;opacity:.9}
+.wt-foot{display:flex;justify-content:space-between;gap:8px;padding:5px 14px 12px;font-size:clamp(13px,.85vw,17px);color:inherit;opacity:1}
+.wt-foot b{color:inherit;font-weight:900}
+.wt-big{font-size:clamp(32px,2.3vw,48px);font-weight:900;text-align:center;padding:12px 0 4px;line-height:1.1}
+.wt-sub{text-align:center;font-size:clamp(13px,.85vw,17px);font-weight:800;color:inherit;opacity:.95;padding-bottom:14px;letter-spacing:.04em;text-transform:uppercase}
+/* Filled KPI tiles with reliable text contrast */
+[data-testid="stMetric"]{background:linear-gradient(135deg,#183b66,#286a8e);padding:18px;border-radius:14px;color:#fff;box-shadow:0 5px 14px rgba(20,40,70,.18);border:1px solid rgba(255,255,255,.2)}
+[data-testid="stMetric"] label,[data-testid="stMetric"] [data-testid="stMetricValue"],[data-testid="stMetric"] [data-testid="stMetricDelta"]{color:#fff!important;font-weight:800!important}
+[data-testid="stMetricValue"]{font-size:clamp(1.7rem,2vw,2.5rem)!important}
+[data-testid="stExpander"],[data-testid="stDataFrame"],[data-testid="stTable"]{border-radius:12px;overflow:hidden;border:1px solid var(--dash-border)}
+[data-testid="stTabs"] [role="tab"]{background:var(--secondary-background-color, #e8eef5);color:var(--text-color, #1c2333);border:1px solid var(--dash-border);border-radius:9px 9px 0 0;margin-right:5px;font-weight:800;padding:10px 14px}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"]{background:#174a7e;color:#fff;border-color:#174a7e}
+/* Sidebar uses a dark background; keep labels white but preserve readable input values */
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#12385a,#1e6475)}
-[data-testid="stSidebar"] *{color:#fff}
-.stButton>button,.stDownloadButton>button{background:#176b87;color:#fff;border:0;border-radius:9px;font-weight:700}
-.stButton>button:hover,.stDownloadButton>button:hover{background:#0d4c67;color:#fff}
+[data-testid="stSidebar"] label,[data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3,[data-testid="stSidebar"] p,[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]{color:#fff!important}
+[data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea,[data-testid="stSidebar"] [data-baseweb="select"]>div{background:var(--background-color, #fff)!important;color:var(--text-color, #1c2333)!important;border:2px solid #9eb8cf!important}
+[data-testid="stSidebar"] input{min-height:44px;font-size:18px!important}
+/* Make sliders, select boxes, numeric inputs and buttons easy to operate on a projector */
+[data-testid="stSlider"] [role="slider"]{width:24px!important;height:24px!important;border:3px solid #fff!important;box-shadow:0 0 0 2px #176b87!important}
+[data-testid="stSlider"] [data-baseweb="slider"] div[role="presentation"]{height:9px!important}
+[data-testid="stSlider"] [data-testid="stTickBar"]{font-size:15px!important}
+[data-testid="stNumberInput"] input,[data-testid="stTextInput"] input,[data-testid="stSelectbox"] [data-baseweb="select"]{font-size:18px!important;min-height:44px}
+.stButton>button,.stDownloadButton>button{background:#176b87;color:#fff;border:2px solid #176b87;border-radius:10px;font-weight:850;font-size:17px;padding:9px 16px;min-height:46px}
+.stButton>button:hover,.stDownloadButton>button:hover{background:#0d4c67;color:#fff;border-color:#0d4c67}
+[data-testid="stDataFrame"] *{font-size:clamp(14px,.9vw,18px)}
+[data-testid="stCaptionContainer"]{font-size:clamp(13px,.85vw,17px)}
+@media (min-width: 1600px) {
+  .wt-grid{gap:18px}
+  .wt{min-height:150px}
+  [data-testid="stMetric"]{padding:22px}
+}
+@media (max-width: 800px) {
+  .wt-grid{grid-template-columns:repeat(auto-fill,minmax(calc(var(--min,190px) * .8),1fr));gap:10px}
+  .wt-foot{flex-wrap:wrap}
+  .block-container{padding-left:1rem;padding-right:1rem}
+}
 </style>
 """
 
@@ -354,7 +382,7 @@ kpi_text = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#202124", "#ffffff"]
 st.markdown("<div class='wt-grid' style='--min:115px'>" + "".join(
     f"<div class='wt' style='padding:14px 14px;background:{kpi_colors[i % len(kpi_colors)]};color:{kpi_text[i % len(kpi_text)]}'>"
     f"<div class='wt-lbl'>{n}</div>"
-    f"<div style='font-size:1.5rem;font-weight:800'>{v}</div></div>" for i, (n, v) in enumerate(kpis)) + "</div>",
+    f"<div style='font-size:clamp(1.7rem,2vw,2.5rem);font-weight:900'>{v}</div></div>" for i, (n, v) in enumerate(kpis)) + "</div>",
     unsafe_allow_html=True)
 legend(th)
 
