@@ -2,9 +2,16 @@ import io
 import math
 import re
 import html
+import base64
+import json
 
 import pandas as pd
 import streamlit as st
+
+try:
+    from streamlit_js_eval import streamlit_js_eval
+except ImportError:
+    streamlit_js_eval = None
 
 st.set_page_config(
     page_title="R4 Line WIP Dashboard",
@@ -23,6 +30,78 @@ LEVELS = [
 DEFAULT_THRESH = [1.18, 0.98, 0.78, 0.58]
 TARGET_FACTOR = 1.18
 
+
+
+# Browser local-storage keys. Files stay in the current browser/profile only.
+PLAN_CACHE_KEY = "r4_wip_morning_commitment_v1"
+WIP_CACHE_KEY = "r4_wip_system_report_v1"
+MAX_BROWSER_CACHE_BYTES = 2_500_000  # conservative limit per file before Base64 expansion
+
+
+class CachedUpload(io.BytesIO):
+    """BytesIO carrying the .name attribute expected by the existing readers."""
+    def __init__(self, data: bytes, name: str):
+        super().__init__(data)
+        self.name = name
+
+
+def _js_string(value: str) -> str:
+    return json.dumps(value)
+
+
+def load_browser_file(storage_key: str, component_key: str):
+    """Read one Base64 encoded uploaded file from this browser's localStorage."""
+    if streamlit_js_eval is None:
+        return None
+    raw = streamlit_js_eval(
+        js_expressions=f"localStorage.getItem({_js_string(storage_key)})",
+        key=component_key,
+        want_output=True,
+    )
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+        return CachedUpload(base64.b64decode(payload["data"]), payload["name"])
+    except (ValueError, KeyError, TypeError, base64.binascii.Error):
+        return None
+
+
+def save_browser_file(uploaded_file, storage_key: str, component_key: str):
+    """Save an uploaded file to browser localStorage and return a status message."""
+    if streamlit_js_eval is None or uploaded_file is None:
+        return None
+    data = uploaded_file.getvalue()
+    if len(data) > MAX_BROWSER_CACHE_BYTES:
+        return "too_large"
+    payload = json.dumps({
+        "name": uploaded_file.name,
+        "data": base64.b64encode(data).decode("ascii"),
+    }, separators=(",", ":"))
+    result = streamlit_js_eval(
+        js_expressions=(
+            "try { localStorage.setItem(" + _js_string(storage_key) + ", "
+            + _js_string(payload) + "); 'saved'; } "
+            "catch (e) { 'error:' + e.name; }"
+        ),
+        key=component_key,
+        want_output=True,
+    )
+    return result
+
+
+def clear_browser_cache():
+    if streamlit_js_eval is None:
+        return None
+    return streamlit_js_eval(
+        js_expressions=(
+            f"localStorage.removeItem({_js_string(PLAN_CACHE_KEY)});"
+            f"localStorage.removeItem({_js_string(WIP_CACHE_KEY)});"
+            "'cleared';"
+        ),
+        key="clear_r4_browser_cache",
+        want_output=True,
+    )
 
 def band_name(n: int) -> str:
     return f"R4-BAND-{int(n):02d}"
@@ -339,16 +418,53 @@ st.title("Line Wise WIP Dashboard - R4")
 
 with st.sidebar:
     st.header("Data input")
-    f1 = st.file_uploader("Morning commitment", type=["xlsx", "csv"])
-    f2 = st.file_uploader("System report", type=["xlsx", "csv"])
+
+    if streamlit_js_eval is None:
+        st.error("Browser cache requires: pip install streamlit-js-eval")
+
+    uploaded_f1 = st.file_uploader("Morning commitment", type=["xlsx", "csv"])
+    uploaded_f2 = st.file_uploader("System report", type=["xlsx", "csv"])
+
+    # Retrieve the last files saved by this browser. A newly uploaded file always wins.
+    cached_f1 = load_browser_file(PLAN_CACHE_KEY, "load_plan_cache")
+    cached_f2 = load_browser_file(WIP_CACHE_KEY, "load_wip_cache")
+    f1 = uploaded_f1 or cached_f1
+    f2 = uploaded_f2 or cached_f2
+
+    if uploaded_f1 is not None:
+        save_status_1 = save_browser_file(uploaded_f1, PLAN_CACHE_KEY, f"save_plan_{uploaded_f1.name}_{uploaded_f1.size}")
+        if save_status_1 == "too_large":
+            st.warning("Morning commitment loaded, but it is too large for browser cache.")
+    elif cached_f1 is not None:
+        st.caption(f"Restored from browser: {cached_f1.name}")
+
+    if uploaded_f2 is not None:
+        save_status_2 = save_browser_file(uploaded_f2, WIP_CACHE_KEY, f"save_wip_{uploaded_f2.name}_{uploaded_f2.size}")
+        if save_status_2 == "too_large":
+            st.warning("System report loaded, but it is too large for browser cache.")
+    elif cached_f2 is not None:
+        st.caption(f"Restored from browser: {cached_f2.name}")
+
+    if st.button("Clear saved browser data", use_container_width=True):
+        st.session_state["clear_browser_cache_requested"] = True
+
+    if st.session_state.get("clear_browser_cache_requested"):
+        clear_result = clear_browser_cache()
+        if clear_result == "cleared":
+            st.session_state.pop("clear_browser_cache_requested", None)
+            st.success("Saved browser data cleared.")
+
+    st.caption("Saved locally in this browser profile. Nothing is written to the server database.")
 
     plan_df = pd.DataFrame(columns=["Zone", "Band No", "Plan Hours", "Day Plan"])
     wip_df = pd.DataFrame(columns=["Workstation", "WIP Qty"])
 
     try:
         if f1:
+            f1.seek(0)
             plan_df = plan_from_df(read_any(f1, "commit"))
         if f2:
+            f2.seek(0)
             wip_df = wip_from_df(read_any(f2, "report"))
     except Exception as exc:
         st.error(f"Could not read the file: {exc}")
