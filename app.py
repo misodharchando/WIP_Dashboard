@@ -181,27 +181,38 @@ TILE_CSS = """
  .wt-act{font-size:1.2rem}.wt-big{font-size:1.5rem}.wt-name{font-size:.7rem}.wt-badge{font-size:.55rem;padding:2px 6px}
  .wt-foot{font-size:.62rem}
 }
-.wt{background:#fff;border:1px solid #e3e6ee;border-radius:12px;box-shadow:0 1px 3px rgba(20,25,40,.10);
-    overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:#1c2333;transition:transform .12s,box-shadow .12s}
+.wt{border:1px solid rgba(255,255,255,.30);border-radius:12px;box-shadow:0 4px 12px rgba(20,25,40,.16);
+    overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;transition:transform .12s,box-shadow .12s}
 .wt:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(20,25,40,.18)}
 .wt-bar{height:7px}
 .wt-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px;padding:8px 10px 2px}
 .wt-name,.wt-badge{white-space:nowrap}
-.wt-name{font-weight:800;font-size:.78rem;letter-spacing:.04em;color:#44506b}
+.wt-name{font-weight:800;font-size:.78rem;letter-spacing:.04em;color:inherit}
 .wt-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
 .wt-body{display:flex;align-items:stretch;padding:6px 10px 4px}
 .wt-col{flex:1;text-align:center}
-.wt-div{width:0;border-left:2px dashed #cfd5e3;margin:2px 6px}
-.wt-lbl{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a93a8}
-.wt-tgt{font-size:1rem;font-weight:600;color:#6b7590}
+.wt-div{width:0;border-left:2px dashed currentColor;opacity:.45;margin:2px 6px}
+.wt-lbl{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:inherit;opacity:.82}
+.wt-tgt{font-size:1rem;font-weight:700;color:inherit}
 .wt-act{font-size:1.45rem;font-weight:800;line-height:1.1}
-.wt-track{position:relative;height:8px;background:#e9ecf3;border-radius:6px;margin:6px 10px 4px;overflow:visible}
+.wt-track{position:relative;height:8px;background:rgba(255,255,255,.30);border-radius:6px;margin:6px 10px 4px;overflow:visible}
 .wt-fill{height:100%;border-radius:6px}
-.wt-mark{position:absolute;top:-3px;width:2px;height:14px;background:#1c2333;opacity:.55}
-.wt-foot{display:flex;justify-content:space-between;padding:2px 10px 9px;font-size:.7rem;color:#6b7590}
-.wt-foot b{color:#1c2333}
+.wt-mark{position:absolute;top:-3px;width:2px;height:14px;background:currentColor;opacity:.75}
+.wt-foot{display:flex;justify-content:space-between;padding:2px 10px 9px;font-size:.7rem;color:inherit;opacity:.9}
+.wt-foot b{color:inherit}
 .wt-big{font-size:1.9rem;font-weight:800;text-align:center;padding:4px 0 2px;line-height:1.1}
-.wt-sub{text-align:center;font-size:.64rem;color:#8a93a8;padding-bottom:9px;letter-spacing:.06em;text-transform:uppercase}
+.wt-sub{text-align:center;font-size:.64rem;color:inherit;opacity:.82;padding-bottom:9px;letter-spacing:.06em;text-transform:uppercase}
+/* Full-color Streamlit dashboard panels and controls */
+.stApp{background:linear-gradient(135deg,#eef4ff 0%,#f7f9fc 55%,#edf7f3 100%)}
+[data-testid="stMetric"]{background:linear-gradient(135deg,#183b66,#286a8e);padding:16px;border-radius:14px;color:#fff;box-shadow:0 4px 12px rgba(20,40,70,.15)}
+[data-testid="stMetric"] label,[data-testid="stMetric"] [data-testid="stMetricValue"],[data-testid="stMetric"] [data-testid="stMetricDelta"]{color:#fff!important}
+[data-testid="stExpander"],[data-testid="stDataFrame"],[data-testid="stTable"]{border-radius:12px;overflow:hidden}
+[data-testid="stTabs"] [role="tab"]{background:#dce8f7;border-radius:8px 8px 0 0;margin-right:4px;font-weight:700}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"]{background:#174a7e;color:#fff}
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#12385a,#1e6475)}
+[data-testid="stSidebar"] *{color:#fff}
+.stButton>button,.stDownloadButton>button{background:#176b87;color:#fff;border:0;border-radius:9px;font-weight:700}
+.stButton>button:hover,.stDownloadButton>button:hover{background:#0d4c67;color:#fff}
 </style>
 """
 
@@ -219,8 +230,8 @@ def card(name, target, actual, days, lvl):
     fill = min(pct, 1.5) / 1.5 * 100            # bar spans 0-150 % of target; marker at 100 %
     mark = 100 / 1.5
     return (
-        "<div class='wt'>"
-        f"<div class='wt-bar' style='background:{bg}'></div>"
+        f"<div class='wt' style='background:{bg};color:{lvl[3]}'>"
+        f"<div class='wt-bar' style='background:rgba(255,255,255,.28)'></div>"
         f"<div class='wt-top'><span class='wt-name'>{name.replace('R4-', '')}</span>{_badge(lvl)}</div>"
         "<div class='wt-body'>"
         f"<div class='wt-col'><div class='wt-lbl'>Target</div><div class='wt-tgt'>{target:,.0f}</div></div>"
@@ -237,8 +248,8 @@ def card(name, target, actual, days, lvl):
 def days_card(name, days, lvl):
     bg = lvl[2]
     return (
-        "<div class='wt'>"
-        f"<div class='wt-bar' style='background:{bg}'></div>"
+        f"<div class='wt' style='background:{bg};color:{lvl[3]}'>"
+        f"<div class='wt-bar' style='background:rgba(255,255,255,.28)'></div>"
         f"<div class='wt-top'><span class='wt-name'>{name.replace('R4-', '')}</span>{_badge(lvl)}</div>"
         f"<div class='wt-big'>{days:.2f}</div><div class='wt-sub'>WIP days</div>"
         "</div>"
@@ -256,8 +267,11 @@ def style_level(df, th):
 
     def row_style(r):
         bg, fg = colour_map[r["Colour"]]
-        return [f"background-color:{bg};color:{fg}" if c in ("WIP Days", "WIP Hours", "Colour", "Level")
-                else "" for c in r.index]
+        return [
+            (f"background-color:{bg};color:{fg};font-weight:700" if c in ("WIP Days", "WIP Hours", "Colour", "Level")
+             else "background-color:#eef4fb;color:#1c2333")
+            for c in r.index
+        ]
     return df.style.apply(row_style, axis=1).format({
         "Day Pcs Target": "{:,.0f}", "Day Planned Hrs": "{:.0f}", "Hourly Output Target": "{:,.1f}",
         "System Line WIP": "{:,.0f}", "WIP Hours": "{:.2f}", "WIP Days": "{:.2f}",
@@ -335,9 +349,12 @@ if calc.empty:
 kpis = [("Bands", f"{len(calc)}"), ("Total WIP (pcs)", f"{calc['System Line WIP'].sum():,.0f}"),
         ("Avg WIP days", f"{calc['WIP Days'].mean():.2f}")] + \
        [(n, f"{int((calc['Level'] == n).sum())}") for n in ["High WIP", "Reorder Level", "Line Stop"]]
+kpi_colors = ["#174a7e", "#087f8c", "#6c4ab6", "#d62828", "#f4b400", "#202124"]
+kpi_text = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#202124", "#ffffff"]
 st.markdown("<div class='wt-grid' style='--min:115px'>" + "".join(
-    f"<div class='wt' style='padding:10px 12px'><div class='wt-lbl'>{n}</div>"
-    f"<div style='font-size:1.5rem;font-weight:800'>{v}</div></div>" for n, v in kpis) + "</div>",
+    f"<div class='wt' style='padding:14px 14px;background:{kpi_colors[i % len(kpi_colors)]};color:{kpi_text[i % len(kpi_text)]}'>"
+    f"<div class='wt-lbl'>{n}</div>"
+    f"<div style='font-size:1.5rem;font-weight:800'>{v}</div></div>" for i, (n, v) in enumerate(kpis)) + "</div>",
     unsafe_allow_html=True)
 legend(th)
 
